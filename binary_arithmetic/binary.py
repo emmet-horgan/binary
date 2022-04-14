@@ -27,7 +27,20 @@ class Integer():
             sign = int(sign, 2)
             exponent = int(exponent, 2) - 127
             mantissa = float(int(mantissa, 2)) / pow(2, 23)
-            return pow(-1, sign) * pow(2, exponent) * (1 + mantissa)
+            if exponent == -127:
+                if mantissa > 0:
+                    return pow(-1, sign) * pow(2, -126) * (mantissa)
+                else:
+                    return None
+
+            elif exponent == int("11111111", 2):
+                if mantissa > 0:
+                    return None
+                else:
+                    return float("inf")
+
+            else:
+                return pow(-1, sign) * pow(2, exponent) * (1 + mantissa)
 
         if output.upper() == "DISPLAY":
             return sign + "\t" + exponent + "\t" + mantissa
