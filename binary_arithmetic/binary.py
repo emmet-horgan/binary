@@ -1,4 +1,4 @@
-class Integer():
+class Integer:
     def __init__(self, value):
         if isinstance(value, str):
             if value.startswith("0x"):
@@ -10,43 +10,65 @@ class Integer():
 
         self._value_str = str(hex(self._value))
 
+    def twoscomplement(self, value=None, size=32):  # Only works for positives
+        if value is None:
+            return int(pow(2, size) - abs(self._value))
+        else:
+            return int(pow(2, size) - abs(value))
+
+    def bin(self, value):
+        """Displays the binary of a number"""
+
     @property
-    def float32(self, output=None):
+    def float32(self):
+        """Interprets the value object attribute binary as a float32 as per the IEEE 754 standard"""
         if self._value < 0:
             self._value = pow(2, 32) + self._value
 
-        bin_str = bin(self._value).split("0b")[1].rjust(32, "0")
-        if len(bin_str) != 32:
-            raise ValueError(f"Value passed is not single precision, it is {len(tmp) / 2} bytes, single precision" +
-                             " floating point is 4 bytes !")
+        sign = [1, -1][self._value & 0x80000000 >> 31]  # 0x80000000 = 1000 0000 0000 0000 0000 0000 0000 0000
+        mantissa = (self._value & 0x007FFFFF) / pow(2, 23)  # 0x007FFFFF = 0000 0000 0111 1111 1111 1111 1111 1111
+        exponent = ((self._value & 0x7F800000) >> 23) - 127  # 0x7F800000 = 0111 1111 1000 0000 0000 0000 0000 0000
 
-        sign = bin_str[0]
-        exponent = bin_str[1:9]
-        mantissa = bin_str[9:]
-        if output is None:
-            sign = int(sign, 2)
-            exponent = int(exponent, 2) - 127
-            mantissa = float(int(mantissa, 2)) / pow(2, 23)
-            if exponent == -127:
-                if mantissa > 0:
-                    return pow(-1, sign) * pow(2, -126) * (mantissa)
-                else:
-                    return None
-
-            elif exponent == int("11111111", 2):
-                if mantissa > 0:
-                    return None
-                else:
-                    return float("inf")
-
+        if exponent == -127:
+            if mantissa > 0:
+                return sign * pow(2, -126) * mantissa
             else:
-                return pow(-1, sign) * pow(2, exponent) * (1 + mantissa)
+                return 0
+        elif exponent == 128:
+            if mantissa > 0:
+                return None
+            else:
+                return float("inf")
+        else:
+            return sign * pow(2, exponent) * (1 + mantissa)  # add one for hidden bit
 
-        if output.upper() == "DISPLAY":
-            return sign + "\t" + exponent + "\t" + mantissa
+    @property
+    def float64(self):
+        """Interprets the value object attribute binary as a float64 as per the IEEE 754 standard"""
+        if self._value < 0:
+            self._value = pow(2, 64) + self._value
 
+        sign = [1, -1][self._value & 0x8000000000000000 >> 63]
+        mantissa = (self._value & 0x000FFFFFFFFFFFFF) / pow(2, 52)
+        exponent = ((self._value & 0x7F800000) >> 52) - 1023
 
-if __name__ == "__main__":
-    obj = Integer(6)
-    print(pow(2, -127))
-    print(obj.float32 - pow(2, -127))
+        if exponent == -1023:
+            if mantissa > 0:
+                return sign * pow(2, -1022) * mantissa
+            else:
+                return 0
+
+        elif exponent == 1024:
+            if mantissa > 0:
+                return None
+            else:
+                float("inf")
+        else:
+            return sign * pow(2, exponent) * (1 + mantissa)  # add one for hidden bit
+
+    def q(self, m: int, n: int):
+        nibbles = int((m + n) / 4)
+        hx = int(pow(16, nibbles) - 1)
+        # hx = int("0x" + ("F" * nibbles), 16)
+        value = self._value & hx
+        return value / pow(2, n)
